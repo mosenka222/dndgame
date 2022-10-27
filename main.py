@@ -83,15 +83,45 @@ class Sprite:
         self.img = pygame.transform.rotate(self.original_img, self.angle)
         self.angle += perc % 360
 
-def p(o1, o2):
-    if not (o2.x > o1.x + o1.w or o1.x > o2.x + o2.w or o2.y > o1.y + o1.h or o1.y > o2.y + o2.h):
+def mp(o1):
+    pos = pygame.mouse.get_pos()
+    if not (pos[0] > o1.x + o1.w or pos[1] > o1.y + o1.h or pos[0] < o1.x or pos[1] < o1.y):
         return True
     else:
         return False
 
-def mp(o1):
-    pos = pygame.mouse.get_pos()
-    if not (pos[0] > o1.x + o1.w or pos[1] > o1.y + o1.h or pos[0] < o1.x or pos[1] < o1.y):
+
+current_character = 0
+char_selector = False
+mygame = False
+class CharButton:
+    def __init__(self, character_id, character_name, x, y, width, height, color='deepskyblue'):
+        self.char_id = character_id
+        self.char_name = character_name
+        self.x = x
+        self.y = y
+        self.w = width
+        self.h = height
+        self.color = color
+        self.sprite = Sprite(760, self.y, "images/void.png", 400, 100)
+    def draw_but(self):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.w, self.h))
+
+    def handle_event(self, e):
+        if mp(self.sprite):
+            self.color = 'dodgerblue2'
+        else:
+            self.color = 'deepskyblue'
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            if mp(self.sprite):
+                current_character = self.char_id
+                char_selector = False
+                mygame = True
+                print(current_character, char_selector, mygame)
+                start_main()
+
+def p(o1, o2):
+    if not (o2.x > o1.x + o1.w or o1.x > o2.x + o2.w or o2.y > o1.y + o1.h or o1.y > o2.y + o2.h):
         return True
     else:
         return False
@@ -115,8 +145,7 @@ options = False
 register = False
 continue_screen = False
 continue_touched = False
-char_selector = False
-mygame = False
+map = False
 
 
 wifitesturl = "https://google.com"
@@ -125,7 +154,6 @@ try:
     request = requests.get(wifitesturl, timeout=timeout)
 except (requests.ConnectionError, requests.Timeout) as exception:
     disconnect = True
-    print("ok")
 
 # цвета
 disconnect_button_color = 'lightskyblue3'
@@ -180,6 +208,8 @@ theme = pygame.mixer.Sound('musiс/theme.mp3')
 theme_played = False
 char_builder_start = pygame.mixer.Sound("musiс/char_builder_open.mp3")
 char_builder_start_played = False
+game_start = pygame.mixer.Sound("musiс/start_game.mp3")
+game_start = False
 
 # переменные
 user = ''
@@ -196,6 +226,88 @@ sounds = float(musiс_set[1])
 char_builder_loading = 0
 characters = []
 character_buts = []
+current_map = 'forest'
+player_x = 1
+player_y = 1
+
+# карты
+# forest_map = "OOOOOOOOUUOOOOOBBBBBBBBBBBOOBTBB"\
+#              "OOOOUUOOBBUUUUOTUUUTBBTTOOOOOUUU"\
+#              "LOORBBLRBBLTTTOBTTBLRBRBBRLOOBBB"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "BOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "BBOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "TTTTOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOUUOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOBTOOOOOOOOOOOOOOOOOOOOOOOOOOOO"\
+#              "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+
+map_parts = 544
+map = ''
+while map_parts != 0:
+    map_select_part = random.randint(1, 6)
+    if map_select_part == 1:
+        map += 'B'
+        map_parts -= 1
+    elif map_select_part == 2:
+        map += 'O'
+        map_parts -= 1
+    elif map_select_part == 3:
+        map += 'L'
+        map_parts -= 1
+    elif map_select_part == 4:
+        map += 'R'
+        map_parts -= 1
+    elif map_select_part == 5:
+        map += 'T'
+        map_parts -= 1
+    elif map_select_part == 6:
+        map += 'U'
+        map_parts -= 1
+
+part_x = 1
+part_y = 1
+part_col = 0
+parts = []
+for map_part in map:
+    if map_part == 'B':
+        map_select_part = random.randint(1, 5)
+        if map_select_part == 1:
+            part1 = Sprite(part_x, part_y, "images/backgrounds/game/forest/O.jpg", 59, 59)
+        elif map_select_part == 2:
+            part1 = Sprite(part_x, part_y, "images/backgrounds/game/forest/L.jpg", 59, 59)
+        elif map_select_part == 3:
+            part1 = Sprite(part_x, part_y, "images/backgrounds/game/forest/R.jpg", 59, 59)
+        elif map_select_part == 4:
+            part1 = Sprite(part_x, part_y, "images/backgrounds/game/forest/T.jpg", 59, 59)
+        elif map_select_part == 5:
+            part1 = Sprite(part_x, part_y, "images/backgrounds/game/forest/U.jpg", 59, 59)
+        parts.append(part1)
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/B.png", 59, 59)
+    elif map_part == 'O':
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/O.jpg", 59, 59)
+    if map_part == 'L':
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/L.jpg", 59, 59)
+    if map_part == 'R':
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/R.jpg", 59, 59)
+    if map_part == 'T':
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/T.jpg", 59, 59)
+    if map_part == 'U':
+        part = Sprite(part_x, part_y, "images/backgrounds/game/forest/U.jpg", 59, 59)
+    part_col += 1
+    if part_col % 32 == 0:
+        part_x = 1
+        part_y += 60
+    else:
+        part_x += 60
+    parts.append(part)
 
 # картинки
 menu_background_img = pygame.image.load("images/backgrounds/menu_screen.png").convert_alpha()
@@ -207,7 +319,7 @@ options_but_hover_img = pygame.image.load("images/buttons/menu/options2.png").co
 options_but_img = pygame.image.load("images/buttons/menu/options.png").convert_alpha()
 titles_but_hover_img = pygame.image.load("images/buttons/menu/titles2.png").convert_alpha()
 titles_but_img = pygame.image.load("images/buttons/menu/titles.png").convert_alpha()
-forest_bg =
+forest_bg = pygame.image.load("images/backgrounds/game/forest.jpg").convert_alpha()
 
 if not disconnect:
     try:
@@ -221,9 +333,9 @@ if not disconnect:
 try:
     characters_ids = []
     cursor.execute("SELECT character_id, character_name, character_surname FROM characters WHERE character_owner_id = " + user)
-    all_chars = []
+    char_buts = []
     for all_char in cursor:
-        all_chars.append(str(all_char[1] + " " + all_char[2]))
+        char_buts.append(CharButton(all_char[0], str(all_char[1] + " " + all_char[2]), 760, 200 + (len(char_buts) * 110), 400, 100))
     cnx.commit()
 except:
     pass
@@ -234,6 +346,35 @@ try:
         user_mail = user_mail1[0]
 except:
     pass
+
+inventory_screen = pygame.Surface((1768, 1020))
+
+async def start_main():
+    mygame = True
+    char_selector = False
+    map = True
+    try:
+        player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        player_socket.connect(('localhost', 9090))
+    except:
+        disconnect = True
+
+    cursor.execute("SELECT * FROM characters WHERE character_owner_id = " + str(user))
+    character_pars = []
+    for char_par in cursor:
+        for cp in range(31):
+            character_pars.append(char_par[cp])
+    print(character_pars)
+    # if character_pars[30] == "Рустилуор":
+    #     if 0 <= character_pars[27] <= 2000 and \
+    #             0 <= character_pars[28] <= 2000 and \
+    #             0 <= character_pars[29] <= 2000:
+
+    player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
+    inventory = False
+    await mygame
+
 
 while game:
 
@@ -275,11 +416,6 @@ while game:
         planks4.render(screen)
         planks1.render(screen)
         planks3.render(screen)
-
-    # if not disconnect:
-        # data = player_socket.recv(1024)
-        # data = data.decode()
-        # print(data)
 
     pygame.mixer.Sound.set_volume(theme, music)
     pygame.mixer.Sound.set_volume(char_builder_start, music)
@@ -409,25 +545,42 @@ while game:
         screen.fill((30, 30, 30))
         screen.blit(characters_txt.render(("Ваши персонажи"), 1, 'white'), (815, 100))
         try:
-            for char_name in all_chars:
-                character_buts.append(COLOR_HOVER)
-                pygame.draw.rect(screen, character_buts[len(characters)], (760, 200 + (len(characters) * 110), 400, 100))
-                screen.blit(characters_txt.render((char_name), 1, 'white'), (765, 230 + (len(characters) * 110)))
-                characters.append(Sprite(760, 200 + (len(characters) * 110), "images/void.png", 400, 100))
-            for char in characters:
-                if mp(char):
-                    character_buts[characters.index(char)] = COLOR_ACTIVE
-                else:
-                    character_buts[characters.index(char)] = COLOR_HOVER
+            for char_but in char_buts:
+                char_but.draw_but()
+                screen.blit(characters_txt.render((char_but.char_name), 1, 'white'), (765, char_but.y + 30))
+            # for char_void in characters:
+            #     character_buts.append(COLOR_HOVER)
+            #     pygame.draw.rect(screen, character_buts[len(characters)], (760, 200 + (len(characters) * 110), 400, 100))
+            #     screen.blit(characters_txt.render((char_name), 1, 'white'), (765, 230 + (len(characters) * 110)))
+            # for char in characters:
+            # if mp(char_void):
+            #     character_buts[characters.index(char_void)] = COLOR_ACTIVE
+            # else:
+            #     character_buts[characters.index(char_void)] = COLOR_HOVER
         except:
             pass
 
     window.blit(screen, (0, 0))
     screen.fill((255, 255, 255))
 
-    if mygame:
-        background.img =
-        background.render(screen)
+    if mygame and not disconnect:
+        if map:
+            for gor in range(18):
+                pygame.draw.line(screen, 'black', (0, gor * 60), (1920, gor * 60))
+            for vert in range(32):
+                pygame.draw.line(screen, 'black', (vert * 60, 0), (vert * 60, 1080))
+            for p in parts:
+                p.render(screen)
+        player.render(screen)
+        player_socket.send('getplayers start'.encode())
+        data = player_socket.recv(1024)
+        data = data.decode()
+        if data == 'getpos':
+            str_send = 'givepos ' + str(player_x) + '-' + str(player_y)
+            player_socket.send(str_send.encode())
+
+        # if inventory:
+
 
     pygame.display.flip()
     for e in pygame.event.get():
@@ -451,6 +604,9 @@ while game:
             # file.close()
 
             # file = open("data.txt", "w")
+        if char_selector:
+            for char_but1 in char_buts:
+                char_but1.handle_event(e)
         if e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1:
                 if disconnect:
@@ -581,13 +737,18 @@ while game:
                             file.write(str(user))
                             file.close()
                             try:
-                                cursor.execute("SELECT character_id character_name, character_surname FROM characters WHERE character_owner_id = " + str(user))
-                                all_chars = []
+                                characters_ids = []
+                                cursor.execute(
+                                    "SELECT character_id, character_name, character_surname FROM characters WHERE character_owner_id = " + user)
+                                char_buts = []
                                 for all_char in cursor:
-                                    all_chars.append(str(all_char[1] + " " + all_char[2]))
-                                print("[" + time.ctime() + "] characters loaded")
+                                    char_buts.append(CharButton(all_char[0], str(all_char[1] + " " + all_char[2]), 760,
+                                                                200 * (len(char_buts) * 110), 400, 100))
+                                    characters.append(
+                                        Sprite(760, 200 + (len(char_buts) * 110), "images/void.png", 400, 100))
+                                cnx.commit()
                             except:
-                                print("[" + time.ctime() + "] characters loading failed")
+                                pass
 
                             try:
                                 cursor.execute("SELECT player_mail FROM players WHERE player_id = " + user)
@@ -606,15 +767,33 @@ while game:
                 if char_selector:
                     for char_b in characters:
                         if mp(char_b):
-                            character = 6
                             mygame = True
                             char_selector = False
+                            map = True
                             try:
                                 player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                 player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                                 player_socket.connect(('localhost', 9090))
                             except:
                                 disconnect = True
+
+                            cursor.execute("SELECT * FROM characters WHERE character_owner_id = " + str(user))
+                            character_pars = []
+                            for char_par in cursor:
+                                for cp in range(31):
+                                    character_pars.append(char_par[cp])
+                            print(character_pars)
+                            # if character_pars[30] == "Рустилуор":
+                            #     if 0 <= character_pars[27] <= 2000 and \
+                            #             0 <= character_pars[28] <= 2000 and \
+                            #             0 <= character_pars[29] <= 2000:
+
+                            player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
+                            inventory = False
+        if e.type == pygame.KEYDOWN:
+            if mygame:
+                if e.key == pygame.K_e:
+                    inventory = True
 
         if char_selector:
             characters.clear()

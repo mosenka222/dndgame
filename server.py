@@ -29,21 +29,43 @@ while True:
     except:
         pass
 
-    # for player in players:
-    #     try:
-    #         data = player.recv(1024)
-    #         data = data.decode()
-    #         print('Получил ', data)
-    #     except:
-    #         pass
+    for player in players:
+        try:
+            command = player.recv(1024)
+            command = command.decode()
+            print(command)
+            if 'getplayers' in command:
+                print("getplayers_got")
+                if 'start' in command:
+                    for player in players:
+                        try:
+                            player.conn.send('getpos'.encode())
+                            try:
+                                command = player.recv(1024)
+                                command = command.decode()
+                                if 'givepos' in command:
+                                    tmp = command.replace('givepos ', '')
+                                    tmp_str = ''
+                                    player.pos = []
+                                    for tmp_ch in tmp:
+                                        if tmp_ch != '-':
+                                            tmp_str += tmp_ch
+                                        else:
+                                            player.pos.append(tmp_str)
+                                            tmp_str = ''
+                                        print(player.pos)
+                            except:
+                                player.errors += 1
+                        except:
+                            player.errors += 1
+        except:
+            pass
 
-    # for player in players:
-    #     try:
-    #         player.conn.send('connect '.encode())
-    #
-    #     except:
-    #         player.errors += 1
-        # print(player.errors)
+    for player in players:
+        try:
+            player.conn.send('connect'.encode())
+        except:
+            player.errors += 1
 
     for player in players:
         if player.errors > 100:
