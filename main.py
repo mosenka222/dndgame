@@ -91,7 +91,6 @@ def mp(o1):
         return False
 
 
-current_character = 0
 char_selector = False
 mygame = False
 class CharButton:
@@ -112,13 +111,6 @@ class CharButton:
             self.color = 'dodgerblue2'
         else:
             self.color = 'deepskyblue'
-        if e.type == pygame.MOUSEBUTTONDOWN:
-            if mp(self.sprite):
-                current_character = self.char_id
-                char_selector = False
-                mygame = True
-                print(current_character, char_selector, mygame)
-                start_main()
 
 def p(o1, o2):
     if not (o2.x > o1.x + o1.w or o1.x > o2.x + o2.w or o2.y > o1.y + o1.h or o1.y > o2.y + o2.h):
@@ -229,6 +221,7 @@ character_buts = []
 current_map = 'forest'
 player_x = 1
 player_y = 1
+current_character = 0
 
 # карты
 # forest_map = "OOOOOOOOUUOOOOOBBBBBBBBBBBOOBTBB"\
@@ -348,32 +341,6 @@ except:
     pass
 
 inventory_screen = pygame.Surface((1768, 1020))
-
-async def start_main():
-    mygame = True
-    char_selector = False
-    map = True
-    try:
-        player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        player_socket.connect(('localhost', 9090))
-    except:
-        disconnect = True
-
-    cursor.execute("SELECT * FROM characters WHERE character_owner_id = " + str(user))
-    character_pars = []
-    for char_par in cursor:
-        for cp in range(31):
-            character_pars.append(char_par[cp])
-    print(character_pars)
-    # if character_pars[30] == "Рустилуор":
-    #     if 0 <= character_pars[27] <= 2000 and \
-    #             0 <= character_pars[28] <= 2000 and \
-    #             0 <= character_pars[29] <= 2000:
-
-    player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
-    inventory = False
-    await mygame
 
 
 while game:
@@ -605,10 +572,42 @@ while game:
 
             # file = open("data.txt", "w")
         if char_selector:
-            for char_but1 in char_buts:
-                char_but1.handle_event(e)
+            try:
+                for char_but1 in char_buts:
+                    char_but1.handle_event(e)
+            except:
+                pass
         if e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1:
+                if char_selector:
+                    for char_but2 in char_buts:
+                        if mp(char_but2.sprite):
+                            current_character = char_but2.char_id
+
+                            mygame = True
+                            char_selector = False
+                            map = True
+                            try:
+                                player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                                player_socket.connect(('localhost', 9090))
+                            except:
+                                disconnect = True
+
+                            cursor.execute("SELECT * FROM characters WHERE character_owner_id = " + str(
+                                user) + " AND character_id = " + str(current_character))
+                            character_pars = []
+                            for char_par in cursor:
+                                for cp in range(31):
+                                    character_pars.append(char_par[cp])
+                            print(character_pars)
+                            # if character_pars[30] == "Рустилуор":
+                            #     if 0 <= character_pars[27] <= 2000 and \
+                            #             0 <= character_pars[28] <= 2000 and \
+                            #             0 <= character_pars[29] <= 2000:
+
+                            player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
+                            inventory = False
                 if disconnect:
                     if mp(disconnect_void):
                         game = False
@@ -739,13 +738,11 @@ while game:
                             try:
                                 characters_ids = []
                                 cursor.execute(
-                                    "SELECT character_id, character_name, character_surname FROM characters WHERE character_owner_id = " + user)
+                                    "SELECT character_id, character_name, character_surname FROM characters WHERE character_owner_id = " + str(user))
                                 char_buts = []
                                 for all_char in cursor:
                                     char_buts.append(CharButton(all_char[0], str(all_char[1] + " " + all_char[2]), 760,
-                                                                200 * (len(char_buts) * 110), 400, 100))
-                                    characters.append(
-                                        Sprite(760, 200 + (len(char_buts) * 110), "images/void.png", 400, 100))
+                                                                200 + (len(char_buts) * 110), 400, 100))
                                 cnx.commit()
                             except:
                                 pass
@@ -764,36 +761,12 @@ while game:
                         input_box1.text = ''
                         input_box2.text = ''
                         input_box3.text = ''
-                if char_selector:
-                    for char_b in characters:
-                        if mp(char_b):
-                            mygame = True
-                            char_selector = False
-                            map = True
-                            try:
-                                player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                                player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-                                player_socket.connect(('localhost', 9090))
-                            except:
-                                disconnect = True
 
-                            cursor.execute("SELECT * FROM characters WHERE character_owner_id = " + str(user))
-                            character_pars = []
-                            for char_par in cursor:
-                                for cp in range(31):
-                                    character_pars.append(char_par[cp])
-                            print(character_pars)
-                            # if character_pars[30] == "Рустилуор":
-                            #     if 0 <= character_pars[27] <= 2000 and \
-                            #             0 <= character_pars[28] <= 2000 and \
-                            #             0 <= character_pars[29] <= 2000:
 
-                            player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
-                            inventory = False
         if e.type == pygame.KEYDOWN:
             if mygame:
                 if e.key == pygame.K_e:
-                    inventory = True
+                    inventory = not inventory
 
         if char_selector:
             characters.clear()
