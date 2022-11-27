@@ -5,6 +5,8 @@ import mysql.connector
 import socket
 import requests
 import hashlib
+import json
+
 
 window = pygame.display.set_mode((1920, 1025), pygame.RESIZABLE)
 WIDTH = window.get_width()
@@ -30,6 +32,7 @@ title_txt = pygame.font.Font('fonts/algerian.ttf', 300)
 characters_txt = pygame.font.Font(None, 50)
 disconnect_txt = pygame.font.Font('fonts/algerian.ttf', 50)
 disconnect_error_txt = pygame.font.Font('fonts/algerian.ttf', 25)
+inventory_item_txt = pygame.font.Font('fonts/algerian.ttf', 25)
 
 class InputBox:
 
@@ -112,6 +115,26 @@ class CharButton:
         else:
             self.color = 'deepskyblue'
 
+class MoveListButton:
+    def __init__(self, move_header, move_level, x, y, width=200, height=100, color='deepskyblue'):
+        self.move_header = move_header
+        self.move_level = move_level
+        self.x = x
+        self.y = y
+        self.w = width
+        self.h = height
+        self.color = color
+        self.sprite = Sprite(self.x, self.y, "images/void.png", self.w, self.h)
+    def draw_but(self):
+        pygame.draw.rect(screen, self.color, (self.x, self.y, self.w, self.h))
+        screen.blit(characters_txt.render((self.move_header), 1, 'white'), (self.x + 10, self.y + 30))
+
+    def handle_event(self, e):
+        if mp(self.sprite):
+            self.color = 'dodgerblue2'
+        else:
+            self.color = 'deepskyblue'
+
 def p(o1, o2):
     if not (o2.x > o1.x + o1.w or o1.x > o2.x + o2.w or o2.y > o1.y + o1.h or o1.y > o2.y + o2.h):
         return True
@@ -130,6 +153,32 @@ def con_roll(count, dice):
     for coco in range(count):
         roll_answer += random.randint(1, dice)
     return roll_answer
+def player_move(angle, x, y, player_sprite):
+    if angle == 'left':
+        x -= 1
+        for part in parts:
+            if p(part, player_sprite):
+                if map[parts.index(part) - 1] == 'B':
+                    x += 1
+    if angle == 'right':
+        x += 1
+        for part in parts:
+            if p(part, player_sprite):
+                if map[parts.index(part) + 1] == 'B':
+                    x -= 1
+    if angle == 'top':
+        y -= 1
+        for part in parts:
+            if p(part, player_sprite):
+                if map[parts.index(part) - 32] == 'B':
+                    y += 1
+    if angle == 'under':
+        y += 1
+        for part in parts:
+            if p(part, player_sprite):
+                if map[parts.index(part) + 32] == 'B':
+                    y -= 1
+    return x, y
 
 # буллевые переменные
 menu = True
@@ -138,7 +187,10 @@ register = False
 continue_screen = False
 continue_touched = False
 map = False
-
+inventory = False
+move_list = False
+move_map = False
+fight = False
 
 wifitesturl = "https://google.com"
 timeout = 5
@@ -192,6 +244,36 @@ back_button = Sprite(116, 116, "images/buttons/reg_log/back_button.png", 64, 64)
 reg_void = Sprite(500, 490, "images/void.png", 250, 50)
 login_void = Sprite(500, 400, "images/void.png", 250, 50)
 
+inventory_background = Sprite((1920-1254)/2, (1080-708)/2, "images/backgrounds/game/backs/inventory.png", 1254, 708)
+inventory_character = Sprite(1100, 300, "images/backgrounds/game/backs/inventory_character.png", 374, 504)
+inventory_helmet = Sprite(1175, 325, "images/backgrounds/game/backs/helmet.png", 36, 36)
+inventory_helmet_sub = Sprite(1350, 325, "images/backgrounds/game/backs/helmet_sub.png", 36, 36)
+inventory_chestplate = Sprite(1150, 400, "images/backgrounds/game/backs/chestplate.png", 36, 36)
+inventory_chestplate_sub = Sprite(1375, 400, "images/backgrounds/game/backs/chestplate_sub.png", 36, 36)
+inventory_glove_left = Sprite(1150, 500, "images/backgrounds/game/backs/glove_left.png", 36, 36)
+inventory_glove_right = Sprite(1375, 500, "images/backgrounds/game/backs/glove_right.png", 36, 36)
+inventory_hand_left = Sprite(1125, 575, "images/backgrounds/game/backs/hand_left.png", 36, 36)
+inventory_hand_right = Sprite(1400, 575, "images/backgrounds/game/backs/hand_right.png", 36, 36)
+inventory_leggings = Sprite(1150, 650, "images/backgrounds/game/backs/leggings.png", 36, 36)
+inventory_leggings_sub = Sprite(1375, 650, "images/backgrounds/game/backs/leggings_sub.png", 36, 36)
+inventory_shoe_left = Sprite(1175, 750, "images/backgrounds/game/backs/shoe_left.png", 36, 36)
+inventory_shoe_right = Sprite(1350, 750, "images/backgrounds/game/backs/shoe_right.png", 36, 36)
+inventory_slots = []
+inv_x = 500
+inv_y = 400
+inv_count = 0
+for inv_sl in range(100):
+    inventory_slots.append(Sprite(inv_x, inv_y, "images/backgrounds/game/backs/slot.png", 36, 36))
+    inv_x += 37
+    inv_count += 1
+    if inv_count == 10:
+        inv_count = 0
+        inv_x = 500
+        inv_y += 37
+inventory_left_arrow = Sprite(500, 350, "images/backgrounds/game/backs/left_arrow.png", 36, 36)
+inventory_right_arrow = Sprite(832, 350, "images/backgrounds/game/backs/right_arrow.png", 36, 36)
+
+
 # музыка
 pygame.mixer.music.load("musiс/theme.mp3")
 pygame.mixer.music.load("musiс/char_builder_open.mp3")
@@ -222,6 +304,7 @@ current_map = 'forest'
 player_x = 1
 player_y = 1
 current_character = 0
+
 
 # карты
 # forest_map = "OOOOOOOOUUOOOOOBBBBBBBBBBBOOBTBB"\
@@ -302,6 +385,11 @@ for map_part in map:
         part_x += 60
     parts.append(part)
 
+move_list_level = 0
+move_move_button = MoveListButton('Движение', 1, 1500, 250)
+move_action_button = MoveListButton('Действие', 2, 1500, 400)
+move_list_buttons = [move_move_button, move_action_button]
+
 # картинки
 menu_background_img = pygame.image.load("images/backgrounds/menu_screen.png").convert_alpha()
 new_game_but_hover_img = pygame.image.load("images/buttons/menu/new_game2.png").convert_alpha()
@@ -340,8 +428,6 @@ try:
 except:
     pass
 
-inventory_screen = pygame.Surface((1768, 1020))
-
 
 while game:
 
@@ -359,10 +445,10 @@ while game:
     # for (player_name) in cursor:
     #     print((player_name[0]))
 
-    if register or continue_screen:
-        pygame.key.set_repeat(0, 0)
-    else:
-        pygame.key.set_repeat(1, 1)
+    # if register or continue_screen:
+    #     pygame.key.set_repeat(0, 0)
+    # else:
+    #     pygame.key.set_repeat(1, 1)
 
     if disconnect:
         background.img = pygame.image.load("images/backgrounds/tavern.jpg").convert_alpha()
@@ -531,7 +617,7 @@ while game:
     screen.fill((255, 255, 255))
 
     if mygame and not disconnect:
-        if map:
+        if map_drawing:
             for gor in range(18):
                 pygame.draw.line(screen, 'black', (0, gor * 60), (1920, gor * 60))
             for vert in range(32):
@@ -539,14 +625,62 @@ while game:
             for p in parts:
                 p.render(screen)
         player.render(screen)
-        player_socket.send('getplayers start'.encode())
-        data = player_socket.recv(1024)
-        data = data.decode()
-        if data == 'getpos':
-            str_send = 'givepos ' + str(player_x) + '-' + str(player_y)
-            player_socket.send(str_send.encode())
+        player.x = player_x * 60 + 1
+        player.y = player_z * 60 + 1
+        # player_socket.send('getplayers start'.encode())
+        # data = player_socket.recv(1024)
+        # data = data.decode()
+        # if data == 'getpos':
+        #     str_send = 'givepos ' + str(player_x) + '-' + str(player_y)
+        #     player_socket.send(str_send.encode())
 
-        # if inventory:
+
+    if inventory:
+        inventory_background.render(screen)
+        inventory_character.render(screen)
+        inventory_helmet.render(screen)
+        inventory_helmet_sub.render(screen)
+        inventory_chestplate.render(screen)
+        inventory_chestplate_sub.render(screen)
+        inventory_glove_left.render(screen)
+        inventory_glove_right.render(screen)
+        inventory_hand_left.render(screen)
+        inventory_hand_right.render(screen)
+        inventory_leggings.render(screen)
+        inventory_leggings_sub.render(screen)
+        inventory_shoe_left.render(screen)
+        inventory_shoe_right.render(screen)
+        for inv_sl in inventory_slots:
+            inv_sl.render(screen)
+        inventory_left_arrow.render(screen)
+        inventory_right_arrow.render(screen)
+        for inv_sl in inventory_sprite_list:
+            inv_sl.render(screen)
+            if mp(inv_sl):
+                if len(list(player_inventory)[inventory_sprite_list.index(inv_sl)]) < 37:
+                    screen.blit(inventory_item_txt.render((list(player_inventory)[inventory_sprite_list.index(inv_sl)]), 1, 'black'), (500, 300))
+                else:
+                    inventory_slot_name_string = ''
+                    inventory_slot_name_count = 0
+                    for inventory_slot_name_str in list(player_inventory)[inventory_sprite_list.index(inv_sl)]:
+                        inventory_slot_name_string += inventory_slot_name_str
+                        inventory_slot_name_count += 1
+                        if inventory_slot_name_count > 35:
+                            inventory_slot_name_string += '...'
+                            break
+                    screen.blit(inventory_item_txt.render((inventory_slot_name_string), 1, 'black'), (500, 300))
+
+    if move_list:
+        pygame.draw.rect(screen, 'black', (1295, 45, 610, 910))
+        pygame.draw.rect(screen, background_color2, (1300, 50, 600, 900))
+
+        if move_list_level == 0:
+            move_move_button.draw_but()
+            move_action_button.draw_but()
+
+        if move_list_level == 1:
+            if not fight:
+                move_list = False
 
 
     pygame.display.flip()
@@ -577,8 +711,16 @@ while game:
                     char_but1.handle_event(e)
             except:
                 pass
+        if move_list:
+            move_move_button.handle_event(e)
+            move_action_button.handle_event(e)
         if e.type == pygame.MOUSEBUTTONDOWN:
             if e.button == 1:
+                if move_list:
+                    for move_list_button in move_list_buttons:
+                        if mp(move_list_button):
+                            move_list_level = move_list_button.move_level
+
                 if char_selector:
                     for char_but2 in char_buts:
                         if mp(char_but2.sprite):
@@ -586,7 +728,7 @@ while game:
 
                             mygame = True
                             char_selector = False
-                            map = True
+                            map_drawing = True
                             try:
                                 player_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                                 player_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -606,8 +748,27 @@ while game:
                             #             0 <= character_pars[28] <= 2000 and \
                             #             0 <= character_pars[29] <= 2000:
 
-                            player = Sprite(1, 1, "images/characters/" + character_pars[26], 59, 59)
+                            player_x = 0
+                            player_z = 0
+                            player = Sprite(player_x, player_z, "images/characters/" + character_pars[26], 59, 59)
+
+                            player_inventory = json.loads(character_pars[20].replace("'", "\""))
+                            inventory_sprite_list = []
+
+                            inv_x1 = 500
+                            inv_y1 = 400
+                            inv_count1 = 0
+                            for inventory_sprite in player_inventory:
+                                inventory_sprite_list.append(Sprite(inv_x1, inv_y1, "images/game/inventory/" + inventory_sprite + ".png", 36, 36))
+                                inv_x1 += 37
+                                inv_count1 += 1
+                                if inv_count1 == 10:
+                                    inv_count1 = 0
+                                    inv_x1 = 500
+                                    inv_y1 += 37
                             inventory = False
+
+
                 if disconnect:
                     if mp(disconnect_void):
                         game = False
@@ -762,11 +923,25 @@ while game:
                         input_box2.text = ''
                         input_box3.text = ''
 
-
         if e.type == pygame.KEYDOWN:
             if mygame:
-                if e.key == pygame.K_e:
+                if e.key == pygame.K_e and not move_list:
                     inventory = not inventory
+                if e.key == pygame.K_F1 and not inventory:
+                    move_list = not move_list
+                    move_list_level = 0
+                if move_list_level == 1:
+                    for part in parts:
+                        if mp(part):
+                            if map[parts.index(part)] != 'B':
+                                if e.key == pygame.K_d:
+                                    player_x, player_z = player_move('right', player_x, player_z, player)
+                                if e.key == pygame.K_a:
+                                    player_x, player_z = player_move('left', player_x, player_z, player)
+                                if e.key == pygame.K_s:
+                                    player_x, player_z = player_move('under', player_x, player_z, player)
+                                if e.key == pygame.K_w:
+                                    player_x, player_z = player_move('top', player_x, player_z, player)
 
         if char_selector:
             characters.clear()
